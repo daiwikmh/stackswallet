@@ -1,0 +1,16 @@
+{
+  "name": "Trata Delegation",
+  "short_name": "Trata",
+  "description": "Manage delegated STX spending with daily limits and time-based controls",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
