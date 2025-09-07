@@ -9,10 +9,10 @@ plan:
     - id: 0
       transactions:
         - contract-publish:
-            contract-name: delegation
+            contract-name: multisig
             expected-sender: ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5
-            cost: 104840
-            path: "contracts\\delegation.clar"
+            cost: 112230
+            path: "contracts\\multisig.clar"
             anchor-block-only: true
             clarity-version: 3
       epoch: "3.2"

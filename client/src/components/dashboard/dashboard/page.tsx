@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import { ChevronRight, Wallet, TrendingUp, Coins, BarChart3, Bell, RefreshCw, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronRight, Wallet, TrendingUp, Coins, BarChart3, Bell, RefreshCw, Users, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PortfolioPage from "./portfolio/page";
-import LendingPage from "./lending/page";
 import BorrowingPage from "./borrowing/page";
-import StakingPage from "./staking/page";
 import AnalyticsPage from "./analytics/page";
 import DelegationPage from "./delegation/page";
+import MultisigPage from "../../multisig/page";
 import { StacksWalletConnect } from "@/components/StacksWalletConnect";
 import { useStacksWallet } from "@/contexts/StacksWalletContext";
-import { getConnectedStxAddress } from "../../delegation/wallet-utils";
+import { getConnectedStxAddress } from "../../../utils/wallet";
 
 export default function DashboardPage() {
   const { isWalletConnected, selectedAddress } = useStacksWallet();
@@ -80,9 +79,9 @@ export default function DashboardPage() {
           <nav className="space-y-2">
             {[
               { id: "portfolio", icon: Wallet, label: "PORTFOLIO" },
-              { id: "lending", icon: TrendingUp, label: "LENDING" },
               { id: "borrowing", icon: Coins, label: "BORROWING" },
               { id: "delegation", icon: Users, label: "DELEGATION" },
+              { id: "multisig", icon: Shield, label: "MULTISIG" },
               { id: "analytics", icon: BarChart3, label: "ANALYTICS" },
             ].map((item) => (
               <button
@@ -153,7 +152,6 @@ export default function DashboardPage() {
         {/* Dashboard Content */}
         <div className="flex-1 overflow-auto">
           {activeSection === "portfolio" && <PortfolioPage />}
-          {activeSection === "lending" && <LendingPage />}
           {activeSection === "borrowing" && <BorrowingPage />}
           {activeSection === "delegation" && (
             <DelegationPage 
@@ -161,7 +159,7 @@ export default function DashboardPage() {
               isWalletConnected={isWalletConnected}
             />
           )}
-          {activeSection === "staking" && <StakingPage />}
+          {activeSection === "multisig" && <MultisigPage />}
           {activeSection === "analytics" && <AnalyticsPage />}
         </div>
       </div>

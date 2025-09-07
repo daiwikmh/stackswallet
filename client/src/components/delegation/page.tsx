@@ -8,7 +8,7 @@ import DelegationList from './DelegationList';
 import SpendDelegated from './SpendDelegated';
 import { STACKS_TESTNET } from '@stacks/network';
 import { DelegationProvider } from './DelegationContext';
-import { getConnectedStxAddress } from './wallet-utils';
+import { getConnectedStxAddress } from '../../utils/wallet';
 
 interface TabProps {
   id: string;

@@ -18,7 +18,6 @@ export default function Footer() {
           <div>
             <h3 className="font-semibold mb-4">Protocol</h3>
             <div className="space-y-2 text-sm text-neutral-400">
-              <div>Lending</div>
               <div>Borrowing</div>
               <div>Staking</div>
               <div>Governance</div>
