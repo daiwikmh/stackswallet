@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronRight, Wallet, Bell, RefreshCw, Users, Shield, Receipt } from "lucide-react";
+import { ChevronRight, Wallet, Bell, RefreshCw, Users, Shield, Receipt, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DelegationPage from "./delegation/page";
 import MultisigPage from "../../multisig/page";
 import SplitwisePage from "../../splitwise/page";
+import AgentPage from "../../agent/page";
 import { StacksWalletConnect } from "@/components/StacksWalletConnect";
 import { useStacksWallet } from "@/contexts/StacksWalletContext";
 import { getConnectedStxAddress } from "../../../utils/wallet";
@@ -79,6 +80,7 @@ export default function DashboardPage() {
               { id: "delegation", icon: Users, label: "DELEGATION" },
               { id: "multisig", icon: Shield, label: "MULTISIG" },
               { id: "splitwise", icon: Receipt, label: "SPLIT PAYMENTS" },
+              { id: "agent", icon: Bot, label: "AI AGENTS" },
             ].map((item) => (
               <button
                 key={item.id}
@@ -156,6 +158,12 @@ export default function DashboardPage() {
           {activeSection === "multisig" && <MultisigPage />}
           {activeSection === "splitwise" && (
             <SplitwisePage 
+              walletAddress={properAddress}
+              isWalletConnected={isWalletConnected}
+            />
+          )}
+          {activeSection === "agent" && (
+            <AgentPage 
               walletAddress={properAddress}
               isWalletConnected={isWalletConnected}
             />
