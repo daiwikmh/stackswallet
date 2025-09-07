@@ -1,19 +1,51 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { ChevronRight, Wallet, TrendingUp, Coins, BarChart3, Bell, RefreshCw } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { ChevronRight, Wallet, TrendingUp, Coins, BarChart3, Bell, RefreshCw, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PortfolioPage from "./portfolio/page";
 import LendingPage from "./lending/page";
 import BorrowingPage from "./borrowing/page";
 import StakingPage from "./staking/page";
 import AnalyticsPage from "./analytics/page";
+import DelegationPage from "./delegation/page";
 import { StacksWalletConnect } from "@/components/StacksWalletConnect";
+import { useStacksWallet } from "@/contexts/StacksWalletContext";
+import { getConnectedStxAddress } from "../../delegation/wallet-utils";
 
 export default function DashboardPage() {
+  const { isWalletConnected, selectedAddress } = useStacksWallet();
   const [activeSection, setActiveSection] = useState("portfolio");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [properAddress, setProperAddress] = useState<string | null>(null);
 
+  useEffect(() => {
+    const initializeWalletData = async () => {
+      if (isWalletConnected) {
+        // Primary: use selectedAddress from context
+        if (selectedAddress) {
+          console.log('✅ Dashboard using selectedAddress from context:', selectedAddress);
+          setProperAddress(selectedAddress);
+        } else {
+          // Fallback: get address from Stacks Connect storage
+          console.log('🔄 Dashboard: No selectedAddress, trying to get from storage...');
+          const storageAddress = await getConnectedStxAddress();
+          if (storageAddress) {
+            console.log('✅ Dashboard retrieved address from storage:', storageAddress);
+            setProperAddress(storageAddress);
+          } else {
+            console.log('⚠️ Dashboard: No valid address found');
+            setProperAddress(null);
+          }
+        }
+      } else {
+        // Reset data when wallet disconnects
+        setProperAddress(null);
+      }
+    };
+
+    initializeWalletData();
+  }, [isWalletConnected, selectedAddress]);
 
   return (
     <div className="flex h-screen">
@@ -50,6 +82,7 @@ export default function DashboardPage() {
               { id: "portfolio", icon: Wallet, label: "PORTFOLIO" },
               { id: "lending", icon: TrendingUp, label: "LENDING" },
               { id: "borrowing", icon: Coins, label: "BORROWING" },
+              { id: "delegation", icon: Users, label: "DELEGATION" },
               { id: "analytics", icon: BarChart3, label: "ANALYTICS" },
             ].map((item) => (
               <button
@@ -122,6 +155,12 @@ export default function DashboardPage() {
           {activeSection === "portfolio" && <PortfolioPage />}
           {activeSection === "lending" && <LendingPage />}
           {activeSection === "borrowing" && <BorrowingPage />}
+          {activeSection === "delegation" && (
+            <DelegationPage 
+              walletAddress={properAddress}
+              isWalletConnected={isWalletConnected}
+            />
+          )}
           {activeSection === "staking" && <StakingPage />}
           {activeSection === "analytics" && <AnalyticsPage />}
         </div>

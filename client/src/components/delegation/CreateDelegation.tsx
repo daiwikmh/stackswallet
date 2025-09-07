@@ -58,11 +58,11 @@ const CreateDelegation: React.FC<CreateDelegationProps> = ({ onSuccess }) => {
       return;
     }
 
-    if (!selectedAddress) {
-      alert('Please connect your wallet first. Address not found.');
-      console.error('selectedAddress is null or undefined:', selectedAddress);
-      return;
-    }
+    // if (!selectedAddress) {
+    //   alert('Please connect your wallet first. Address not found.');
+    //   console.error('selectedAddress is null or undefined:', selectedAddress);
+    //   return;
+    // }
     
     console.log('Creating delegation with address:', selectedAddress);
 
