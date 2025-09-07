@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronRight, Wallet, TrendingUp, Coins, BarChart3, Bell, RefreshCw, Users, Shield } from "lucide-react";
+import { ChevronRight, Wallet, Bell, RefreshCw, Users, Shield, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import PortfolioPage from "./portfolio/page";
-import BorrowingPage from "./borrowing/page";
-import AnalyticsPage from "./analytics/page";
 import DelegationPage from "./delegation/page";
 import MultisigPage from "../../multisig/page";
+import SplitwisePage from "../../splitwise/page";
 import { StacksWalletConnect } from "@/components/StacksWalletConnect";
 import { useStacksWallet } from "@/contexts/StacksWalletContext";
 import { getConnectedStxAddress } from "../../../utils/wallet";
@@ -78,11 +76,9 @@ export default function DashboardPage() {
 
           <nav className="space-y-2">
             {[
-              { id: "portfolio", icon: Wallet, label: "PORTFOLIO" },
-              { id: "borrowing", icon: Coins, label: "BORROWING" },
               { id: "delegation", icon: Users, label: "DELEGATION" },
               { id: "multisig", icon: Shield, label: "MULTISIG" },
-              { id: "analytics", icon: BarChart3, label: "ANALYTICS" },
+              { id: "splitwise", icon: Receipt, label: "SPLIT PAYMENTS" },
             ].map((item) => (
               <button
                 key={item.id}
@@ -151,8 +147,6 @@ export default function DashboardPage() {
 
         {/* Dashboard Content */}
         <div className="flex-1 overflow-auto">
-          {activeSection === "portfolio" && <PortfolioPage />}
-          {activeSection === "borrowing" && <BorrowingPage />}
           {activeSection === "delegation" && (
             <DelegationPage 
               walletAddress={properAddress}
@@ -160,7 +154,12 @@ export default function DashboardPage() {
             />
           )}
           {activeSection === "multisig" && <MultisigPage />}
-          {activeSection === "analytics" && <AnalyticsPage />}
+          {activeSection === "splitwise" && (
+            <SplitwisePage 
+              walletAddress={properAddress}
+              isWalletConnected={isWalletConnected}
+            />
+          )}
         </div>
       </div>
     </div>

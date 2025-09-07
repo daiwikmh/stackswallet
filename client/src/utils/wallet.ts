@@ -8,21 +8,34 @@ export const getConnectedStxAddress = async (): Promise<string | null> => {
     const storage = getLocalStorage();
     console.log('🔍 Shared wallet storage:', storage);
     
-    if (storage && storage.addresses && Array.isArray(storage.addresses) && storage.addresses.length > 0) {
-      // Handle both string addresses and address objects
-      const firstAddress = storage.addresses[0];
-      const address = typeof firstAddress === 'string' ? firstAddress : firstAddress.address;
+    if (storage && storage.addresses) {
+      // Check for STX addresses in the addresses.stx array
+      if (storage.addresses.stx && Array.isArray(storage.addresses.stx) && storage.addresses.stx.length > 0) {
+        const firstStxAddress = storage.addresses.stx[0];
+        const address = typeof firstStxAddress === 'string' ? firstStxAddress : firstStxAddress.address;
+        
+        if (isValidStxAddress(address)) {
+          console.log('✅ Shared wallet retrieved valid STX address:', address);
+          return address;
+        } else {
+          console.log('⚠️ Shared wallet invalid STX address format:', address);
+          return null;
+        }
+      }
       
-      if (isValidStxAddress(address)) {
-        console.log('✅ Shared wallet retrieved valid STX address:', address);
-        return address;
-      } else {
-        console.log('⚠️ Shared wallet invalid STX address format:', address);
-        return null;
+      // Fallback: check if addresses is directly an array (old format)
+      if (Array.isArray(storage.addresses) && storage.addresses.length > 0) {
+        const firstAddress = storage.addresses[0];
+        const address = typeof firstAddress === 'string' ? firstAddress : firstAddress.address;
+        
+        if (isValidStxAddress(address)) {
+          console.log('✅ Shared wallet retrieved valid STX address (fallback):', address);
+          return address;
+        }
       }
     }
     
-    console.log('⚠️ Shared wallet no addresses found in wallet storage');
+    console.log('⚠️ Shared wallet no STX addresses found in wallet storage');
     return null;
   } catch (error) {
     console.error('❌ Shared wallet error getting STX address from storage:', error);
@@ -51,10 +64,22 @@ export const getConnectedAddresses = async (): Promise<string[]> => {
   try {
     const storage = getLocalStorage();
     
-    if (storage && storage.addresses && Array.isArray(storage.addresses)) {
-      const addresses = storage.addresses.map((addr: any) => 
-        typeof addr === 'string' ? addr : addr.address
-      ).filter((addr: string) => isValidStxAddress(addr));
+    if (storage && storage.addresses) {
+      let addresses: string[] = [];
+      
+      // Check for STX addresses in the addresses.stx array
+      if (storage.addresses.stx && Array.isArray(storage.addresses.stx)) {
+        addresses = storage.addresses.stx.map((addr: any) => 
+          typeof addr === 'string' ? addr : addr.address
+        ).filter((addr: string) => isValidStxAddress(addr));
+      }
+      
+      // Fallback: check if addresses is directly an array (old format)
+      if (addresses.length === 0 && Array.isArray(storage.addresses)) {
+        addresses = storage.addresses.map((addr: any) => 
+          typeof addr === 'string' ? addr : addr.address
+        ).filter((addr: string) => isValidStxAddress(addr));
+      }
       
       console.log('✅ Shared wallet retrieved addresses:', addresses);
       return addresses;
@@ -71,7 +96,20 @@ export const getConnectedAddresses = async (): Promise<string[]> => {
 export const isWalletConnected = (): boolean => {
   try {
     const storage = getLocalStorage();
-    return !!(storage && storage.addresses && Array.isArray(storage.addresses) && storage.addresses.length > 0);
+    
+    if (storage && storage.addresses) {
+      // Check for STX addresses in the addresses.stx array
+      if (storage.addresses.stx && Array.isArray(storage.addresses.stx) && storage.addresses.stx.length > 0) {
+        return true;
+      }
+      
+      // Fallback: check if addresses is directly an array (old format)
+      if (Array.isArray(storage.addresses) && storage.addresses.length > 0) {
+        return true;
+      }
+    }
+    
+    return false;
   } catch (error) {
     console.error('❌ Shared wallet error checking connection:', error);
     return false;

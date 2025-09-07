@@ -60,10 +60,14 @@ export class MultisigContract {
     initialOwners: string[],
     requiredApprovals: number
   ) {
+    console.log('🔧 MultisigContract.initialize called with:', { initialOwners, requiredApprovals });
+    
     const functionArgs = [
       listCV(initialOwners.map(owner => standardPrincipalCV(owner))),
       uintCV(requiredApprovals),
     ];
+
+    console.log('🔧 Function args created:', functionArgs);
 
     const txOptions = {
       contractAddress: CONTRACT_ADDRESS,
@@ -80,6 +84,9 @@ export class MultisigContract {
         console.log('❌ Initialize transaction cancelled');
       }
     };
+
+    console.log('🔧 TX options:', txOptions);
+    console.log('🚀 Calling openContractCall...');
 
     return openContractCall(txOptions);
   }

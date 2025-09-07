@@ -12,7 +12,7 @@ export default function CTASection() {
             Join thousands of Bitcoin holders who are already earning passive income with Bitlend.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/dashboard">
+            <Link to="/DelegationPage">
               <Button size="lg" className="bg-orange-500 hover:bg-orange-600 text-white">
                 Launch App
                 <ArrowRight className="w-4 h-4 ml-2" />

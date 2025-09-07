@@ -10,10 +10,17 @@ interface InitializeWalletProps {
 
 const InitializeWallet: React.FC<InitializeWalletProps> = ({ onSuccess }) => {
   const { walletAddress, isWalletReady } = useMultisig();
-  const [owners, setOwners] = useState<string[]>([walletAddress || '']);
+  const [owners, setOwners] = useState<string[]>([]);
   const [threshold, setThreshold] = useState<number>(2);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newOwner, setNewOwner] = useState('');
+
+  // Initialize owners array when wallet address is available
+  React.useEffect(() => {
+    if (walletAddress && owners.length === 0) {
+      setOwners([walletAddress]);
+    }
+  }, [walletAddress, owners.length]);
 
   const addOwner = () => {
     if (newOwner && !owners.includes(newOwner) && owners.length < 10) {
@@ -39,14 +46,46 @@ const InitializeWallet: React.FC<InitializeWalletProps> = ({ onSuccess }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isWalletReady || owners.length === 0 || threshold === 0) return;
+    
+    // Enhanced validation
+    if (!isWalletReady) {
+      console.log('⚠️ Wallet not ready');
+      return;
+    }
+    
+    if (owners.length === 0) {
+      console.log('⚠️ No owners specified');
+      return;
+    }
+    
+    if (threshold === 0 || threshold > owners.length) {
+      console.log('⚠️ Invalid threshold:', threshold);
+      return;
+    }
 
+    // Filter out any empty addresses
+    const validOwners = owners.filter(owner => owner && owner.trim() !== '');
+    if (validOwners.length === 0) {
+      console.log('⚠️ No valid owner addresses');
+      return;
+    }
+
+    console.log('🔄 Initializing multisig wallet with:', { 
+      owners: validOwners, 
+      threshold,
+      walletAddress,
+      isWalletReady 
+    });
+    
     setIsSubmitting(true);
     try {
-      await MultisigContract.initialize(owners, threshold);
+      console.log('📤 Calling MultisigContract.initialize...');
+      const result = await MultisigContract.initialize(validOwners, threshold);
+      console.log('✅ Initialize call completed:', result);
       onSuccess?.();
     } catch (error) {
-      console.error('Failed to initialize wallet:', error);
+      console.error('❌ Failed to initialize wallet:', error);
+      alert(`Failed to initialize wallet: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -100,7 +139,7 @@ const InitializeWallet: React.FC<InitializeWalletProps> = ({ onSuccess }) => {
                     variant="ghost"
                     size="sm"
                     onClick={() => removeOwner(index)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -124,6 +163,7 @@ const InitializeWallet: React.FC<InitializeWalletProps> = ({ onSuccess }) => {
                 variant="outline"
                 onClick={addOwner}
                 disabled={!newOwner || owners.includes(newOwner)}
+                className="border-neutral-600 text-neutral-300 hover:bg-neutral-700"
               >
                 <Plus className="w-4 h-4" />
               </Button>
