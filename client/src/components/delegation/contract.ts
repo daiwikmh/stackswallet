@@ -68,9 +68,15 @@ export class DelegationContract {
       network: NETWORK,
       anchorMode: AnchorMode.Any,
       postConditionMode: PostConditionMode.Allow,
+      onFinish: (data: any) => {
+        console.log('✅ Transaction submitted:', data);
+      },
+      onCancel: () => {
+        console.log('❌ Transaction cancelled');
+      }
     };
 
-    // Use Stacks Connect to open wallet
+    // Use Stacks Connect to open wallet - this will use the connected wallet instance
     return openContractCall(txOptions);
   }
 
@@ -92,6 +98,12 @@ export class DelegationContract {
       network: NETWORK,
       anchorMode: AnchorMode.Any,
       postConditionMode: PostConditionMode.Allow,
+      onFinish: (data: any) => {
+        console.log('✅ Transaction submitted:', data);
+      },
+      onCancel: () => {
+        console.log('❌ Transaction cancelled');
+      }
     };
 
     return openContractCall(txOptions);
@@ -116,6 +128,12 @@ export class DelegationContract {
       network: NETWORK,
       anchorMode: AnchorMode.Any,
       postConditionMode: PostConditionMode.Allow,
+      onFinish: (data: any) => {
+        console.log('✅ Transaction submitted:', data);
+      },
+      onCancel: () => {
+        console.log('❌ Transaction cancelled');
+      }
     };
 
     return openContractCall(txOptions);
@@ -134,6 +152,12 @@ export class DelegationContract {
       network: NETWORK,
       anchorMode: AnchorMode.Any,
       postConditionMode: PostConditionMode.Allow,
+      onFinish: (data: any) => {
+        console.log('✅ Transaction submitted:', data);
+      },
+      onCancel: () => {
+        console.log('❌ Transaction cancelled');
+      }
     };
 
     return openContractCall(txOptions);
@@ -152,6 +176,12 @@ export class DelegationContract {
       network: NETWORK,
       anchorMode: AnchorMode.Any,
       postConditionMode: PostConditionMode.Allow,
+      onFinish: (data: any) => {
+        console.log('✅ Transaction submitted:', data);
+      },
+      onCancel: () => {
+        console.log('❌ Transaction cancelled');
+      }
     };
 
     return openContractCall(txOptions);
@@ -171,6 +201,12 @@ export class DelegationContract {
       network: NETWORK,
       anchorMode: AnchorMode.Any,
       postConditionMode: PostConditionMode.Allow,
+      onFinish: (data: any) => {
+        console.log('✅ Transaction submitted:', data);
+      },
+      onCancel: () => {
+        console.log('❌ Transaction cancelled');
+      }
     };
 
     return openContractCall(txOptions);

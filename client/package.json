@@ -29,6 +29,7 @@
     "@stacks/bns": "^7.2.0",
     "@stacks/connect": "^8.1.9",
     "@stacks/transactions": "^7.2.0",
+    "@stacks/wallet-sdk": "^7.2.0",
     "@story-protocol/core-sdk": "^1.3.2",
     "@tailwindcss/vite": "^4.0.17",
     "@tanstack/react-query": "^5.80.6",

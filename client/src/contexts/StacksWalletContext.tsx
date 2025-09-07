@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { connect, disconnect, isConnected } from '@stacks/connect';
+import { connect, disconnect, isConnected, getLocalStorage } from '@stacks/connect';
 
 interface StacksWalletContextType {
   isWalletConnected: boolean;
@@ -28,9 +28,22 @@ export const StacksWalletProvider = ({ children }: StacksWalletProviderProps) =>
       setIsWalletConnected(connected);
       
       if (connected) {
-        // If connected, we would normally get addresses from the connect response
-        // For now, we'll set a placeholder - the real addresses come from connect()
-        console.log('✅ Wallet already connected');
+        // Get stored wallet data from localStorage
+        try {
+          const storage = getLocalStorage();
+          console.log('📝 Retrieved storage:', storage);
+          
+          if (storage && storage.addresses && Array.isArray(storage.addresses)) {
+            const addressStrings = storage.addresses.map(addr => 
+              typeof addr === 'string' ? addr : addr.address
+            );
+            setAddresses(addressStrings);
+            setSelectedAddress(addressStrings[0]);
+            console.log('✅ Restored addresses from storage:', addressStrings);
+          }
+        } catch (error) {
+          console.error('❌ Error reading wallet storage:', error);
+        }
       }
     };
     
@@ -50,22 +63,32 @@ export const StacksWalletProvider = ({ children }: StacksWalletProviderProps) =>
         setIsWalletConnected(true);
         console.log('✅ Set wallet connected to true');
         
+        // Handle official Stacks Connect response structure
         if (response.addresses && Array.isArray(response.addresses) && response.addresses.length > 0) {
-          setAddresses(response.addresses);
-          setSelectedAddress(response.addresses[0]);
-          console.log('✅ Set addresses:', response.addresses);
-          console.log('✅ Set selected address:', response.addresses[0]);
+          // Extract addresses from objects: { address: "SP...", publicKey: "..." }
+          const addressStrings = response.addresses.map(addr => 
+            typeof addr === 'string' ? addr : addr.address
+          );
+          setAddresses(addressStrings);
+          setSelectedAddress(addressStrings[0]);
+          console.log('✅ Set addresses:', addressStrings);
+          console.log('✅ Set selected address:', addressStrings[0]);
         } else {
-          console.log('⚠️ No addresses in response or addresses is not an array');
-          console.log('📍 Available response properties:', Object.keys(response));
-          
-          // Try alternative address fields
-          if (response.address) {
-            console.log('📍 Found single address field:', response.address);
-            setSelectedAddress(response.address);
-            setAddresses([response.address]);
-          } else if (response.userSession) {
-            console.log('📍 Found userSession, will try to extract address later');
+          // Fallback: check localStorage for stored wallet data
+          try {
+            const storage = getLocalStorage();
+            if (storage && storage.addresses && Array.isArray(storage.addresses)) {
+              const addressStrings = storage.addresses.map(addr => 
+                typeof addr === 'string' ? addr : addr.address
+              );
+              setAddresses(addressStrings);
+              setSelectedAddress(addressStrings[0]);
+              console.log('✅ Used stored addresses:', addressStrings);
+            } else {
+              console.log('⚠️ No addresses found in response or storage');
+            }
+          } catch (storageError) {
+            console.error('❌ Error reading storage:', storageError);
           }
         }
       } else {

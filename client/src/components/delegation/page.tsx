@@ -6,6 +6,9 @@ import CreateDelegation from './CreateDelegation';
 import ManageDelegation from './ManageDelegation';
 import DelegationList from './DelegationList';
 import SpendDelegated from './SpendDelegated';
+import { STACKS_TESTNET } from '@stacks/network';
+import { DelegationProvider } from './DelegationContext';
+import { getConnectedStxAddress } from './wallet-utils';
 
 interface TabProps {
   id: string;
@@ -28,10 +31,11 @@ const Tab: React.FC<TabProps> = ({ id, label, isActive, onClick }) => (
 );
 
 const DelegationPage: React.FC = () => {
-  const { isWalletConnected, selectedAddress, addresses, connectWallet } = useStacksWallet();
+  const { isWalletConnected, selectedAddress, addresses } = useStacksWallet();
   const [activeTab, setActiveTab] = useState('create');
   const [contractBalance, setContractBalance] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [properAddress, setProperAddress] = useState<string | null>(null);
 
   const tabs = [
     { id: 'create', label: 'Create Delegation' },
@@ -51,12 +55,34 @@ const DelegationPage: React.FC = () => {
       }
     };
 
-    if (isWalletConnected && selectedAddress) {
-      fetchContractBalance();
-    } else {
-      // Reset data when wallet disconnects
-      setContractBalance(0);
-    }
+    const initializeWalletData = async () => {
+      if (isWalletConnected) {
+        // Primary: use selectedAddress from context
+        if (selectedAddress) {
+          console.log('✅ Using selectedAddress from context:', selectedAddress);
+          setProperAddress(selectedAddress);
+        } else {
+          // Fallback: get address from Stacks Connect storage
+          console.log('🔄 No selectedAddress, trying to get from storage...');
+          const storageAddress = await getConnectedStxAddress();
+          if (storageAddress) {
+            console.log('✅ Retrieved address from storage:', storageAddress);
+            setProperAddress(storageAddress);
+          } else {
+            console.log('⚠️ No valid address found');
+            setProperAddress(null);
+          }
+        }
+        
+        fetchContractBalance();
+      } else {
+        // Reset data when wallet disconnects
+        setContractBalance(0);
+        setProperAddress(null);
+      }
+    };
+
+    initializeWalletData();
   }, [isWalletConnected, selectedAddress]);
 
   const refreshData = async () => {
@@ -73,7 +99,9 @@ const DelegationPage: React.FC = () => {
 
   // Helper function to check if wallet is truly ready
   const isWalletReady = () => {
-    return isWalletConnected && selectedAddress && selectedAddress.trim() !== '';
+    // If wallet is connected, allow access even without selectedAddress for now
+    // The individual components can handle the case where selectedAddress is missing
+    return isWalletConnected;
   };
 
   if (!isWalletReady()) {
@@ -159,9 +187,16 @@ const DelegationPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-700">Connected Address</p>
-                <p className="text-sm text-gray-900 font-mono bg-white px-3 py-1 rounded mt-1">
-                  {selectedAddress || 'No address found'}
+                <p className={`text-sm font-mono bg-white px-3 py-1 rounded mt-1 ${
+                  properAddress ? 'text-gray-900' : 'text-red-600'
+                }`}>
+                  {properAddress || 'No address detected'}
                 </p>
+                {properAddress && selectedAddress !== properAddress && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Using address from wallet addresses array
+                  </p>
+                )}
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-700">Contract Balance</p>
@@ -177,6 +212,7 @@ const DelegationPage: React.FC = () => {
                 <p><strong>Debug Info:</strong></p>
                 <p>isWalletConnected: {JSON.stringify(isWalletConnected)}</p>
                 <p>selectedAddress: {JSON.stringify(selectedAddress)}</p>
+                <p>properAddress: {JSON.stringify(properAddress)}</p>
                 <p>addresses: {JSON.stringify(addresses)}</p>
               </div>
             )}
@@ -196,23 +232,51 @@ const DelegationPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Tab Content */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="p-6">
-            {activeTab === 'create' && (
-              <CreateDelegation onSuccess={refreshData} />
-            )}
-            {activeTab === 'manage' && (
-              <ManageDelegation onSuccess={refreshData} />
-            )}
-            {activeTab === 'spend' && (
-              <SpendDelegated onSuccess={refreshData} />
-            )}
-            {activeTab === 'list' && (
-              <DelegationList onRefresh={refreshData} />
-            )}
+        {/* Address Warning */}
+        {isWalletConnected && !properAddress && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <div className="w-5 h-5 text-yellow-600 mr-3">
+                ⚠️
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-yellow-800">
+                  Address Not Detected
+                </h3>
+                <p className="text-sm text-yellow-700 mt-1">
+                  Wallet is connected but no address was detected. Some features may not work properly. 
+                  Try disconnecting and reconnecting your wallet.
+                </p>
+                <div className="mt-2 text-xs text-yellow-600 bg-yellow-100 p-2 rounded">
+                  Debug: selectedAddress={JSON.stringify(selectedAddress)}, properAddress={JSON.stringify(properAddress)}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Tab Content */}
+        <DelegationProvider 
+          walletAddress={properAddress} 
+          isWalletConnected={isWalletConnected}
+        >
+          <div className="bg-white rounded-lg shadow-sm">
+            <div className="p-6">
+              {activeTab === 'create' && (
+                <CreateDelegation onSuccess={refreshData} />
+              )}
+              {activeTab === 'manage' && (
+                <ManageDelegation onSuccess={refreshData} />
+              )}
+              {activeTab === 'spend' && (
+                <SpendDelegated onSuccess={refreshData} />
+              )}
+              {activeTab === 'list' && (
+                <DelegationList onRefresh={refreshData} />
+              )}
+            </div>
+          </div>
+        </DelegationProvider>
 
         {/* Footer */}
         <div className="mt-8 text-center text-gray-500 text-sm">
