@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, User, Loader2, MessageSquare, Zap } from "lucide-react";
+import { Bot, Send, User, Loader2, MessageSquare, Zap, Users } from "lucide-react";
 import { agentService } from "./agent-service";
 import ReactMarkdown from "react-markdown";
 import ErrorBoundary from "./ErrorBoundary";
+import { AgentProvider, useAgent } from "./manual/AgentContext";
 
 interface Message {
   id: string;
@@ -25,12 +26,28 @@ interface AgentPageProps {
 }
 
 export default function AgentPage({ walletAddress, isWalletConnected }: AgentPageProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  return (
+    <AgentProvider walletAddress={walletAddress} isWalletConnected={isWalletConnected}>
+      <AgentChatInterface walletAddress={walletAddress} isWalletConnected={isWalletConnected} />
+    </AgentProvider>
+  );
+}
+
+function AgentChatInterface({ walletAddress, isWalletConnected }: AgentPageProps) {
+  const { 
+    agents, 
+    activeAgent, 
+    selectAgent, 
+    getAgentConversation, 
+    sendMessageToAgent, 
+    isAgentResponding 
+  } = useAgent();
+  
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [sessionId] = useState(() => `session_${Date.now()}`);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const conversation = activeAgent ? getAgentConversation(activeAgent.id) : undefined;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -38,67 +55,23 @@ export default function AgentPage({ walletAddress, isWalletConnected }: AgentPag
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [conversation?.messages]);
 
   const handleSendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isAgentResponding) return;
+    
+    if (!activeAgent) {
+      alert("Please select an agent to chat with from the Manual Control section first.");
+      return;
+    }
 
-    const userMessage: Message = {
-      id: `user_${Date.now()}`,
-      role: "user",
-      content: input.trim(),
-      timestamp: new Date(),
-    };
-
-    const assistantMessage: Message = {
-      id: `assistant_${Date.now()}`,
-      role: "assistant",
-      content: "",
-      timestamp: new Date(),
-      isStreaming: true,
-    };
-
-    setMessages(prev => [...prev, userMessage, assistantMessage]);
+    const message = input.trim();
     setInput("");
-    setIsLoading(true);
 
     try {
-      await agentService.streamResponse(
-        input.trim(),
-        sessionId,
-        (chunk: string) => {
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantMessage.id 
-              ? { ...msg, content: msg.content + chunk }
-              : msg
-          ));
-        },
-        () => {
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantMessage.id 
-              ? { ...msg, isStreaming: false }
-              : msg
-          ));
-          setIsLoading(false);
-        },
-        (error: Error) => {
-          console.error("Agent error:", error);
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantMessage.id 
-              ? { 
-                  ...msg, 
-                  content: "Sorry, I encountered an error. Please try again.", 
-                  isStreaming: false 
-                }
-              : msg
-          ));
-          setIsLoading(false);
-        }
-      );
+      await sendMessageToAgent(activeAgent.id, message);
     } catch (error) {
-      console.error("Failed to send message:", error);
-      setMessages(prev => prev.slice(0, -1)); // Remove the assistant message
-      setIsLoading(false);
+      console.error("Failed to send message to agent:", error);
     }
   };
 
@@ -115,6 +88,13 @@ export default function AgentPage({ walletAddress, isWalletConnected }: AgentPag
     { icon: <MessageSquare className="w-4 h-4" />, label: "Smart Contracts", desc: "Interact with Stacks blockchain" },
   ];
 
+  const agentOptions = agents.map(agent => ({
+    id: agent.id,
+    name: agent.name,
+    address: agent.address,
+    isActive: activeAgent?.id === agent.id
+  }));
+
   return (
     <div className="h-full flex flex-col bg-neutral-950">
       {/* Header */}
@@ -125,9 +105,14 @@ export default function AgentPage({ walletAddress, isWalletConnected }: AgentPag
               <Bot className="w-5 h-5 text-orange-500" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">AI Agent Assistant</h1>
+              <h1 className="text-xl font-bold text-white">
+                {activeAgent ? `Chat with ${activeAgent.name}` : "AI Agent Assistant"}
+              </h1>
               <p className="text-sm text-neutral-400">
-                Interact with your multi-sig wallet and delegation system
+                {activeAgent 
+                  ? `Autonomous agent: ${activeAgent.address.slice(0, 8)}...${activeAgent.address.slice(-4)}`
+                  : "Select an agent from Manual Control to start chatting"
+                }
               </p>
             </div>
           </div>
@@ -135,9 +120,9 @@ export default function AgentPage({ walletAddress, isWalletConnected }: AgentPag
             <Badge variant={isWalletConnected ? "default" : "secondary"} className="bg-orange-500/20 text-orange-500">
               {isWalletConnected ? "Connected" : "Disconnected"}
             </Badge>
-            {walletAddress && (
-              <Badge variant="outline" className="font-mono text-xs">
-                {walletAddress.slice(0, 8)}...{walletAddress.slice(-4)}
+            {activeAgent && (
+              <Badge variant="outline" className="bg-blue-500/20 text-blue-500">
+                {activeAgent.name}
               </Badge>
             )}
           </div>
@@ -147,29 +132,72 @@ export default function AgentPage({ walletAddress, isWalletConnected }: AgentPag
       <div className="flex-1 flex overflow-hidden">
         {/* Capabilities Sidebar */}
         <div className="w-80 border-r border-neutral-800 p-6 space-y-4">
-          <h3 className="text-sm font-semibold text-neutral-300 uppercase tracking-wider">
-            Capabilities
-          </h3>
-          <div className="space-y-3">
-            {capabilities.map((capability, index) => (
-              <Card key={index} className="bg-neutral-900/50 border-neutral-700 hover:border-orange-500/30 transition-colors">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="text-orange-500 mt-0.5">
-                      {capability.icon}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-white mb-1">
-                        {capability.label}
-                      </h4>
-                      <p className="text-xs text-neutral-400">
-                        {capability.desc}
-                      </p>
-                    </div>
-                  </div>
+          {/* Agent Selection */}
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-300 uppercase tracking-wider mb-3">
+              Select Agent
+            </h3>
+            {agentOptions.length === 0 ? (
+              <Card className="bg-neutral-900/50 border-neutral-700">
+                <CardContent className="p-4 text-center">
+                  <Users className="w-8 h-8 text-neutral-600 mx-auto mb-2" />
+                  <p className="text-sm text-neutral-400">No agents available</p>
+                  <p className="text-xs text-neutral-500 mt-1">Create agents in Manual Control</p>
                 </CardContent>
               </Card>
-            ))}
+            ) : (
+              <div className="space-y-2">
+                {agentOptions.map((agent) => (
+                  <button
+                    key={agent.id}
+                    onClick={() => selectAgent(agent.id)}
+                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                      agent.isActive
+                        ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
+                        : 'bg-neutral-900/50 border-neutral-700 text-neutral-300 hover:border-blue-500/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Bot className="w-4 h-4" />
+                      <div>
+                        <p className="text-sm font-medium">{agent.name}</p>
+                        <p className="text-xs opacity-70">
+                          {agent.address.slice(0, 8)}...{agent.address.slice(-4)}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Capabilities */}
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-300 uppercase tracking-wider mb-3">
+              Agent Capabilities
+            </h3>
+            <div className="space-y-3">
+              {capabilities.map((capability, index) => (
+                <Card key={index} className="bg-neutral-900/50 border-neutral-700">
+                  <CardContent className="p-3">
+                    <div className="flex items-start gap-3">
+                      <div className="text-orange-500 mt-0.5">
+                        {capability.icon}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-white mb-1">
+                          {capability.label}
+                        </h4>
+                        <p className="text-xs text-neutral-400">
+                          {capability.desc}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
 
           {!isWalletConnected && (
@@ -188,102 +216,188 @@ export default function AgentPage({ walletAddress, isWalletConnected }: AgentPag
           {/* Messages */}
           <ScrollArea className="flex-1 p-6" ref={scrollAreaRef}>
             <div className="space-y-4 max-w-4xl mx-auto">
-              {messages.length === 0 && (
+              {!activeAgent ? (
+                <div className="text-center py-12">
+                  <Users className="w-16 h-16 text-neutral-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-neutral-300 mb-2">
+                    Select an Agent to Start Chatting
+                  </h3>
+                  <p className="text-neutral-500 max-w-md mx-auto">
+                    Choose an agent from the sidebar or create a new one in Manual Control to begin conversing.
+                  </p>
+                </div>
+              ) : !conversation || conversation.messages.length === 0 ? (
                 <div className="text-center py-12">
                   <Bot className="w-16 h-16 text-neutral-600 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-neutral-300 mb-2">
-                    Welcome to AI Agent Assistant
+                    Start a conversation with {activeAgent.name}
                   </h3>
                   <p className="text-neutral-500 max-w-md mx-auto">
-                    I can help you with multi-sig operations, delegation management, and interacting with your Stacks contracts. 
-                    What would you like to do?
+                    This agent has access to multi-sig operations, delegation management, and expense sharing. 
+                    Ask questions or give commands to get started.
                   </p>
                 </div>
-              )}
-
-              {messages.map((message) => (
+              ) : (
+                conversation.messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex gap-3 ${
+                  className={`flex gap-4 ${
                     message.role === "user" ? "justify-end" : "justify-start"
-                  }`}
+                  } mb-6`}
                 >
+                  {message.role === "assistant" && (
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-full flex items-center justify-center border border-orange-500/30">
+                        <Bot className="w-4 h-4 text-orange-400" />
+                      </div>
+                    </div>
+                  )}
+                  
                   <div
-                    className={`max-w-[70%] rounded-lg p-4 ${
+                    className={`max-w-[75%] rounded-2xl shadow-lg border ${
                       message.role === "user"
-                        ? "bg-orange-500 text-white"
-                        : "bg-neutral-800 text-white"
+                        ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white border-orange-400/30 shadow-orange-500/20"
+                        : "bg-gradient-to-br from-neutral-800 to-neutral-900 text-white border-neutral-600/50 shadow-neutral-900/50"
                     }`}
                   >
-                    <div className="flex items-start gap-2">
-                      <div className="flex-shrink-0">
-                        {message.role === "user" ? (
-                          <User className="w-4 h-4 mt-0.5" />
-                        ) : (
-                          <Bot className="w-4 h-4 mt-0.5" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="prose prose-invert prose-sm max-w-none">
-                          {message.role === "assistant" ? (
-                            <ErrorBoundary 
-                              fallback={
-                                <div className="text-white whitespace-pre-wrap">
-                                  {message.content || (message.isStreaming && "Thinking...")}
-                                  {message.isStreaming && message.content && (
-                                    <span className="inline-block w-2 h-5 bg-current ml-1 animate-pulse" />
-                                  )}
-                                </div>
-                              }
-                            >
-                              <SafeMarkdownRenderer 
-                                content={message.content} 
-                                isStreaming={message.isStreaming} 
-                              />
-                            </ErrorBoundary>
-                          ) : (
-                            // User messages don't need markdown
-                            <div className="text-white">
-                              {message.content}
+                    <div className="p-4">
+                      {message.role === "assistant" && (
+                        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-neutral-600/30">
+                          <div className="text-xs font-semibold text-orange-400 uppercase tracking-wider">
+                            {activeAgent?.name || "AI Agent"}
+                          </div>
+                          <div className="w-1 h-1 bg-orange-500/60 rounded-full"></div>
+                          <div className="text-xs text-neutral-400 font-mono">
+                            {activeAgent?.address.slice(0, 8)}...{activeAgent?.address.slice(-4)}
+                          </div>
+                          {message.isStreaming && (
+                            <div className="flex items-center gap-1 ml-auto">
+                              <div className="w-1 h-1 bg-orange-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                              <div className="w-1 h-1 bg-orange-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                              <div className="w-1 h-1 bg-orange-500 rounded-full animate-bounce"></div>
                             </div>
                           )}
                         </div>
-                        <div className="text-xs opacity-60 mt-2">
-                          {message.timestamp.toLocaleTimeString()}
+                      )}
+                      
+                      <div className="prose prose-invert prose-sm max-w-none">
+                        {message.role === "assistant" ? (
+                          <ErrorBoundary 
+                            fallback={
+                              <div className="text-white whitespace-pre-wrap leading-relaxed">
+                                {message.content || (message.isStreaming && (
+                                  <span className="text-orange-300 italic">Thinking...</span>
+                                ))}
+                                {message.isStreaming && message.content && (
+                                  <span className="inline-block w-0.5 h-4 bg-orange-400 ml-1 animate-pulse" />
+                                )}
+                              </div>
+                            }
+                          >
+                            <SafeMarkdownRenderer 
+                              content={message.content} 
+                              isStreaming={message.isStreaming} 
+                            />
+                          </ErrorBoundary>
+                        ) : (
+                          <div className="text-white leading-relaxed">
+                            {message.content}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className={`text-xs mt-3 pt-2 border-t flex items-center gap-2 ${
+                        message.role === "user" 
+                          ? "border-orange-400/20 text-orange-200/70" 
+                          : "border-neutral-600/30 text-neutral-400"
+                      }`}>
+                        <div className="flex items-center gap-1">
+                          {message.role === "user" ? (
+                            <User className="w-3 h-3" />
+                          ) : (
+                            <Bot className="w-3 h-3" />
+                          )}
+                          <span className="text-xs">
+                            {message.role === "user" ? "You" : activeAgent?.name}
+                          </span>
+                        </div>
+                        <div className="w-0.5 h-0.5 rounded-full bg-current opacity-50"></div>
+                        <div className="font-mono text-xs">
+                          {message.timestamp.toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
                         </div>
                       </div>
                     </div>
                   </div>
+                  
+                  {message.role === "user" && (
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center border border-orange-400/50">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
+                ))
+              )}
               <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
 
           {/* Input */}
-          <div className="border-t border-neutral-800 p-6">
+          <div className="border-t border-neutral-800/50 bg-gradient-to-r from-neutral-900 to-neutral-950 p-6">
             <div className="max-w-4xl mx-auto">
-              <div className="flex gap-2">
-                <Input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Ask me about multi-sig operations, delegation, or smart contracts..."
-                  className="flex-1 bg-neutral-800 border-neutral-700 focus:border-orange-500 text-white placeholder:text-neutral-400"
-                  disabled={isLoading}
-                />
+              <div className="flex gap-3">
+                <div className="flex-1 relative">
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder={activeAgent ? `Ask ${activeAgent.name} about multi-sig operations, delegation, or expenses...` : "Select an agent to start chatting..."}
+                    className="w-full bg-neutral-800/80 border border-neutral-700/50 focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 text-white placeholder:text-neutral-500 rounded-xl px-4 py-3 pr-12 shadow-lg backdrop-blur-sm transition-all"
+                    disabled={isAgentResponding || !activeAgent}
+                  />
+                  {activeAgent && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></div>
+                      <div className="text-xs text-neutral-400 font-mono">
+                        {activeAgent.address.slice(0, 6)}...
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <Button
                   onClick={handleSendMessage}
-                  disabled={!input.trim() || isLoading}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                  disabled={!input.trim() || isAgentResponding || !activeAgent}
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-xl shadow-lg transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:transform-none"
                 >
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                  {isAgentResponding ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm">Thinking...</span>
+                    </div>
                   ) : (
-                    <Send className="w-4 h-4" />
+                    <div className="flex items-center gap-2">
+                      <Send className="w-4 h-4" />
+                      <span className="text-sm font-medium">Send</span>
+                    </div>
                   )}
                 </Button>
               </div>
+              
+              {/* Typing indicator when agent is responding */}
+              {isAgentResponding && activeAgent && (
+                <div className="flex items-center gap-2 mt-3 text-xs text-neutral-400">
+                  <div className="flex gap-1">
+                    <div className="w-1 h-1 bg-orange-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-1 h-1 bg-orange-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-1 h-1 bg-orange-500 rounded-full animate-bounce"></div>
+                  </div>
+                  <span>{activeAgent.name} is analyzing your request...</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -311,14 +425,14 @@ function SafeMarkdownRenderer({ content, isStreaming }: SafeMarkdownProps) {
     return (
       <>
         {content ? (
-          <div className="text-white whitespace-pre-wrap">
+          <div className="text-white whitespace-pre-wrap leading-relaxed">
             {content}
           </div>
         ) : (
-          isStreaming && <span className="opacity-50 text-white">Thinking...</span>
+          isStreaming && <span className="text-orange-300 italic">Thinking...</span>
         )}
         {isStreaming && content && (
-          <span className="inline-block w-2 h-5 bg-current ml-1 animate-pulse" />
+          <span className="inline-block w-0.5 h-4 bg-orange-400 ml-1 animate-pulse" />
         )}
       </>
     );
@@ -328,18 +442,34 @@ function SafeMarkdownRenderer({ content, isStreaming }: SafeMarkdownProps) {
     return (
       <>
         <ReactMarkdown
-          className="text-white"
+          className="text-white leading-relaxed"
           components={{
-            // Custom styling for markdown elements
-            h1: ({ children, ...props }) => <h1 className="text-xl font-bold text-white mb-3" {...props}>{children}</h1>,
-            h2: ({ children, ...props }) => <h2 className="text-lg font-semibold text-white mb-2" {...props}>{children}</h2>,
-            h3: ({ children, ...props }) => <h3 className="text-base font-medium text-white mb-2" {...props}>{children}</h3>,
-            p: ({ children, ...props }) => <p className="text-white mb-2 leading-relaxed" {...props}>{children}</p>,
+            // Enhanced styling for markdown elements
+            h1: ({ children, ...props }) => (
+              <h1 className="text-xl font-bold text-orange-200 mb-4 pb-2 border-b border-orange-500/30" {...props}>
+                {children}
+              </h1>
+            ),
+            h2: ({ children, ...props }) => (
+              <h2 className="text-lg font-semibold text-orange-300 mb-3 mt-4" {...props}>
+                {children}
+              </h2>
+            ),
+            h3: ({ children, ...props }) => (
+              <h3 className="text-base font-medium text-orange-400 mb-2 mt-3" {...props}>
+                {children}
+              </h3>
+            ),
+            p: ({ children, ...props }) => (
+              <p className="text-white mb-3 leading-relaxed" {...props}>
+                {children}
+              </p>
+            ),
             code: ({ children, className, ...props }) => {
               const match = /language-(\w+)/.exec(className || '');
               return (
                 <code 
-                  className="bg-neutral-700 px-2 py-1 rounded text-orange-300 font-mono text-sm" 
+                  className="bg-neutral-700/80 px-2 py-1 rounded-md text-orange-300 font-mono text-sm border border-neutral-600/50" 
                   {...props}
                 >
                   {children}
@@ -347,30 +477,73 @@ function SafeMarkdownRenderer({ content, isStreaming }: SafeMarkdownProps) {
               );
             },
             pre: ({ children, ...props }) => (
-              <pre className="bg-neutral-700 p-4 rounded-lg overflow-x-auto text-orange-300 font-mono text-sm mb-3" {...props}>
+              <pre className="bg-neutral-700/80 border border-neutral-600/50 p-4 rounded-xl overflow-x-auto text-orange-300 font-mono text-sm mb-4 shadow-inner" {...props}>
                 {children}
               </pre>
             ),
-            ul: ({ children, ...props }) => <ul className="list-disc list-inside text-white mb-2 space-y-1" {...props}>{children}</ul>,
-            ol: ({ children, ...props }) => <ol className="list-decimal list-inside text-white mb-2 space-y-1" {...props}>{children}</ol>,
-            li: ({ children, ...props }) => <li className="text-white" {...props}>{children}</li>,
-            strong: ({ children, ...props }) => <strong className="font-semibold text-orange-300" {...props}>{children}</strong>,
-            em: ({ children, ...props }) => <em className="italic text-neutral-300" {...props}>{children}</em>,
+            ul: ({ children, ...props }) => (
+              <ul className="list-none text-white mb-3 space-y-2" {...props}>
+                {children}
+              </ul>
+            ),
+            ol: ({ children, ...props }) => (
+              <ol className="list-decimal list-inside text-white mb-3 space-y-2 ml-4" {...props}>
+                {children}
+              </ol>
+            ),
+            li: ({ children, ...props }) => (
+              <li className="text-white flex items-start gap-2" {...props}>
+                <span className="text-orange-400 mt-2 flex-shrink-0">•</span>
+                <span className="flex-1">{children}</span>
+              </li>
+            ),
+            strong: ({ children, ...props }) => (
+              <strong className="font-semibold text-orange-300" {...props}>
+                {children}
+              </strong>
+            ),
+            em: ({ children, ...props }) => (
+              <em className="italic text-neutral-300" {...props}>
+                {children}
+              </em>
+            ),
             blockquote: ({ children, ...props }) => (
-              <blockquote className="border-l-4 border-orange-500 pl-4 text-neutral-300 italic mb-3" {...props}>
+              <blockquote className="border-l-4 border-orange-500/50 bg-orange-500/5 pl-4 py-2 my-3 rounded-r-lg text-neutral-300 italic" {...props}>
                 {children}
               </blockquote>
             ),
             a: ({ children, href, ...props }) => (
               <a 
                 href={href} 
-                className="text-orange-400 hover:text-orange-300 underline" 
+                className="text-orange-400 hover:text-orange-300 underline decoration-orange-500/50 hover:decoration-orange-300 transition-colors" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 {...props}
               >
                 {children}
               </a>
+            ),
+            table: ({ children, ...props }) => (
+              <div className="overflow-x-auto mb-4">
+                <table className="min-w-full border border-neutral-600/50 rounded-lg" {...props}>
+                  {children}
+                </table>
+              </div>
+            ),
+            thead: ({ children, ...props }) => (
+              <thead className="bg-neutral-700/50" {...props}>
+                {children}
+              </thead>
+            ),
+            th: ({ children, ...props }) => (
+              <th className="px-4 py-2 text-left text-orange-300 font-medium border-b border-neutral-600/50" {...props}>
+                {children}
+              </th>
+            ),
+            td: ({ children, ...props }) => (
+              <td className="px-4 py-2 text-white border-b border-neutral-600/30" {...props}>
+                {children}
+              </td>
             ),
           }}
           onError={(error) => {
@@ -381,7 +554,7 @@ function SafeMarkdownRenderer({ content, isStreaming }: SafeMarkdownProps) {
           {content}
         </ReactMarkdown>
         {isStreaming && content && (
-          <span className="inline-block w-2 h-5 bg-current ml-1 animate-pulse" />
+          <span className="inline-block w-0.5 h-4 bg-orange-400 ml-1 animate-pulse" />
         )}
       </>
     );
@@ -390,11 +563,11 @@ function SafeMarkdownRenderer({ content, isStreaming }: SafeMarkdownProps) {
     setHasError(true);
     return (
       <>
-        <div className="text-white whitespace-pre-wrap">
+        <div className="text-white whitespace-pre-wrap leading-relaxed">
           {content}
         </div>
         {isStreaming && content && (
-          <span className="inline-block w-2 h-5 bg-current ml-1 animate-pulse" />
+          <span className="inline-block w-0.5 h-4 bg-orange-400 ml-1 animate-pulse" />
         )}
       </>
     );

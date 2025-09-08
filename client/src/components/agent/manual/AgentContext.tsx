@@ -4,18 +4,40 @@ import { makeSTXTokenTransfer, broadcastTransaction } from '@stacks/transactions
 import { STACKS_TESTNET } from '@stacks/network';
 import { useStacksWallet } from '../../../contexts/StacksWalletContext';
 import { openSTXTransfer } from '@stacks/connect';
+import { agentService } from '../agent-service';
+
+interface AgentMessage {
+  id: string;
+  agentId: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+  isStreaming?: boolean;
+}
+
+interface AgentConversation {
+  agentId: string;
+  messages: AgentMessage[];
+  sessionId: string;
+}
 
 interface AgentContextType {
   agents: AgentWallet[];
   activeAgent: AgentWallet | null;
   transactions: AgentTransaction[];
+  conversations: AgentConversation[];
   isLoading: boolean;
+  isAgentResponding: boolean;
   createAgent: (name: string) => Promise<AgentWallet>;
   selectAgent: (agentId: string) => void;
   updateAgent: (agentId: string, updates: Partial<AgentWallet>) => void;
   deleteAgent: (agentId: string) => void;
   sendSTXFromAgent: (recipientAddress: string, amount: number, memo?: string) => Promise<string>;
   refreshAgents: () => Promise<void>;
+  // New agent interaction methods
+  sendMessageToAgent: (agentId: string, message: string) => Promise<void>;
+  getAgentConversation: (agentId: string) => AgentConversation | undefined;
+  clearAgentConversation: (agentId: string) => void;
 }
 
 const AgentContext = createContext<AgentContextType | undefined>(undefined);
@@ -31,7 +53,9 @@ export const AgentProvider = ({ children, walletAddress, isWalletConnected }: Ag
   const [agents, setAgents] = useState<AgentWallet[]>([]);
   const [activeAgent, setActiveAgent] = useState<AgentWallet | null>(null);
   const [transactions, setTransactions] = useState<AgentTransaction[]>([]);
+  const [conversations, setConversations] = useState<AgentConversation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAgentResponding, setIsAgentResponding] = useState(false);
   
   // Get the actual connected wallet info
   const { selectedAddress } = useStacksWallet();
@@ -251,17 +275,162 @@ export const AgentProvider = ({ children, walletAddress, isWalletConnected }: Ag
     }
   };
 
+  // Send message to agent and get response through LangChain
+  const sendMessageToAgent = async (agentId: string, message: string): Promise<void> => {
+    const agent = agents.find(a => a.id === agentId);
+    if (!agent) {
+      throw new Error(`Agent with ID ${agentId} not found`);
+    }
+
+    // Find or create conversation for this agent
+    let conversation = conversations.find(c => c.agentId === agentId);
+    if (!conversation) {
+      conversation = {
+        agentId,
+        messages: [],
+        sessionId: `agent_${agentId}_${Date.now()}`
+      };
+      setConversations(prev => [...prev, conversation!]);
+    }
+
+    // Add user message
+    const userMessage: AgentMessage = {
+      id: `msg_${Date.now()}`,
+      agentId,
+      role: "user",
+      content: message,
+      timestamp: new Date()
+    };
+
+    // Add assistant message placeholder
+    const assistantMessage: AgentMessage = {
+      id: `msg_${Date.now() + 1}`,
+      agentId,
+      role: "assistant",
+      content: "",
+      timestamp: new Date(),
+      isStreaming: true
+    };
+
+    setConversations(prev => 
+      prev.map(c => 
+        c.agentId === agentId 
+          ? { ...c, messages: [...c.messages, userMessage, assistantMessage] }
+          : c
+      )
+    );
+
+    setIsAgentResponding(true);
+
+    try {
+      // Create enhanced prompt that includes agent context
+      const agentContext = `You are ${agent.name}, an AI agent with your own Stacks wallet (${agent.address}). 
+You have been created by a user and have the following capabilities:
+- Your own private key and Stacks address for autonomous transactions
+- Ability to send and receive STX
+- Access to multi-signature wallet operations
+- Delegation and expense sharing functionality
+
+Current agent status:
+- Name: ${agent.name}
+- Address: ${agent.address}
+- Created: ${new Date(agent.createdAt).toLocaleString()}
+
+User message: ${message}`;
+
+      // Stream response from LangChain agent
+      await agentService.streamResponse(
+        agentContext,
+        conversation.sessionId,
+        (chunk: string) => {
+          setConversations(prev => 
+            prev.map(c => 
+              c.agentId === agentId 
+                ? {
+                    ...c,
+                    messages: c.messages.map(msg =>
+                      msg.id === assistantMessage.id
+                        ? { ...msg, content: msg.content + chunk }
+                        : msg
+                    )
+                  }
+                : c
+            )
+          );
+        },
+        () => {
+          setConversations(prev => 
+            prev.map(c => 
+              c.agentId === agentId 
+                ? {
+                    ...c,
+                    messages: c.messages.map(msg =>
+                      msg.id === assistantMessage.id
+                        ? { ...msg, isStreaming: false }
+                        : msg
+                    )
+                  }
+                : c
+            )
+          );
+          setIsAgentResponding(false);
+        },
+        (error: Error) => {
+          console.error('❌ Agent response error:', error);
+          setConversations(prev => 
+            prev.map(c => 
+              c.agentId === agentId 
+                ? {
+                    ...c,
+                    messages: c.messages.map(msg =>
+                      msg.id === assistantMessage.id
+                        ? { 
+                            ...msg, 
+                            content: "Sorry, I encountered an error. Please try again.", 
+                            isStreaming: false 
+                          }
+                        : msg
+                    )
+                  }
+                : c
+            )
+          );
+          setIsAgentResponding(false);
+        }
+      );
+    } catch (error) {
+      console.error('❌ Failed to send message to agent:', error);
+      setIsAgentResponding(false);
+      throw error;
+    }
+  };
+
+  // Get conversation for specific agent
+  const getAgentConversation = (agentId: string): AgentConversation | undefined => {
+    return conversations.find(c => c.agentId === agentId);
+  };
+
+  // Clear conversation for specific agent
+  const clearAgentConversation = (agentId: string): void => {
+    setConversations(prev => prev.filter(c => c.agentId !== agentId));
+  };
+
   const value: AgentContextType = {
     agents,
     activeAgent,
     transactions,
+    conversations,
     isLoading,
+    isAgentResponding,
     createAgent,
     selectAgent,
     updateAgent,
     deleteAgent,
     sendSTXFromAgent,
     refreshAgents,
+    sendMessageToAgent,
+    getAgentConversation,
+    clearAgentConversation,
   };
 
   return (

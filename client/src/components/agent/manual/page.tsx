@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Bot, Plus, Settings, Send, Shield, Sparkles, Cpu, User, Wrench } from 'lucide-react';
+import { RefreshCw, Plus, Settings, Send, Shield, Sparkles, Cpu, User, Wrench } from 'lucide-react';
 import { AgentProvider } from './AgentContext';
 import { useAgent } from './AgentContext';
 import CreateAgent from './CreateAgent';
@@ -183,7 +182,7 @@ export default function ManualAgentPage({ walletAddress, isWalletConnected }: Ma
 
 // Stats Cards Component
 function AgentStatsCards() {
-  const { agents, activeAgent, transactions } = useAgent();
+  const { agents, activeAgent, transactions, conversations } = useAgent();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -198,16 +197,15 @@ function AgentStatsCards() {
       </div>
 
       <div className="bg-neutral-800 border border-neutral-700 rounded p-4">
-        <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1">Selected Agent</p>
-        <p className="text-sm font-medium text-blue-400">
-          {activeAgent ? activeAgent.name : 'None'}
-        </p>
+        <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1">Conversations</p>
+        <p className="text-2xl font-bold text-blue-400">{conversations.length}</p>
       </div>
 
       <div className="bg-neutral-800 border border-neutral-700 rounded p-4">
         <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1">Transactions</p>
-        <p className="text-2xl font-bold text-blue-400">{transactions.length}</p>
+        <p className="text-2xl font-bold text-cyan-400">{transactions.length}</p>
       </div>
     </div>
   );
 }
+

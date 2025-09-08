@@ -20,13 +20,21 @@ class AgentService {
     try {
       console.log("🤖 Starting agent stream for input:", input);
       
-      // Create the streaming configuration
+      let hasStarted = false;
+      let finalOutput = '';
+      
+      // Create the streaming configuration with proper callbacks
       const streamConfig = {
         configurable: { sessionId },
         callbacks: [
           {
             handleLLMNewToken(token: string) {
               // Handle individual tokens from the LLM
+              console.log("📝 Token received:", token);
+              if (!hasStarted) {
+                hasStarted = true;
+                onChunk(""); // Initialize streaming
+              }
               onChunk(token);
             },
             handleLLMEnd() {
@@ -46,39 +54,52 @@ class AgentService {
         ],
       };
 
-      // Stream the agent response
-      const stream = await agentWithChatHistory.stream(
-        { input },
-        streamConfig
-      );
+      try {
+        // Use invoke for more reliable streaming with the current setup
+        const response = await agentWithChatHistory.invoke(
+          { input },
+          streamConfig
+        );
 
-      // Process the stream
-      for await (const chunk of stream) {
-        if (chunk.agent?.messages && chunk.agent.messages.length > 0) {
-          // Extract the message content from the agent response
-          const lastMessage = chunk.agent.messages[chunk.agent.messages.length - 1];
-          if (lastMessage.content) {
-            // For agent messages, we might get the full content at once
-            // rather than token by token, so we handle it here
-            if (typeof lastMessage.content === 'string') {
-              onChunk(lastMessage.content);
-            }
-          }
-        }
-        
-        // Handle tool calls and other chunk types
-        if (chunk.tools && Object.keys(chunk.tools).length > 0) {
-          onChunk("\n\n🔧 Using tools...\n");
+        // If we have a response output, stream it character by character
+        if (response && response.output) {
+          finalOutput = response.output;
           
-          // Log tool usage
-          Object.entries(chunk.tools).forEach(([toolName, toolResult]) => {
-            console.log(`🔧 Tool ${toolName} executed:`, toolResult);
-            onChunk(`**${toolName}**: Processing...\n`);
-          });
+          // Stream the output character by character for better UX
+          for (let i = 0; i < finalOutput.length; i++) {
+            onChunk(finalOutput[i]);
+            // Small delay to simulate streaming
+            await new Promise(resolve => setTimeout(resolve, 20));
+          }
+        } else {
+          onChunk("I apologize, but I couldn't generate a proper response. Please try again.");
+        }
+
+        onComplete();
+
+      } catch (streamError) {
+        console.error("❌ Streaming error, falling back to regular invoke:", streamError);
+        
+        // Fallback to regular invoke if streaming fails
+        try {
+          const response = await agentWithChatHistory.invoke(
+            { input },
+            { configurable: { sessionId } }
+          );
+          
+          if (response && response.output) {
+            finalOutput = response.output;
+            onChunk(finalOutput);
+          } else {
+            onChunk("I'm having trouble processing your request. Please try again.");
+          }
+          
+          onComplete();
+        } catch (fallbackError) {
+          console.error("❌ Fallback also failed:", fallbackError);
+          onError(fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)));
         }
       }
-
-      onComplete();
 
     } catch (error) {
       console.error("❌ Agent service error:", error);
