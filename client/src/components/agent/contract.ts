@@ -263,7 +263,7 @@ export const formatAddress = (addr: string): string => {
 
 // Storage helpers for managing agents in localStorage
 export const AgentStorage = {
-  STORAGE_KEY: 'bitlend-agents',
+  STORAGE_KEY: 'Hogo-agents',
 
   saveAgents(agents: AgentWallet[]): void {
     try {

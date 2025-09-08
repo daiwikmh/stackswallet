@@ -11,7 +11,7 @@ export default function HowItWorksSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center space-y-4 mb-16">
           <h2 className="text-3xl lg:text-4xl font-bold tracking-tight">
-            How <span className="text-orange-500">Bitlend</span> Works
+            How <span className="text-orange-500">Hogo</span> Works
           </h2>
           <p className="text-xl text-neutral-400 max-w-3xl mx-auto">
             Three simple ways to put your Bitcoin to work and earn passive income.

@@ -8,7 +8,7 @@ export default function Footer() {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Bitcoin className="w-6 h-6 text-orange-500" />
-              <span className="text-lg font-bold tracking-wider text-orange-500">BITLEND</span>
+              <span className="text-lg font-bold tracking-wider text-orange-500">Hogo</span>
             </div>
             <p className="text-neutral-400 text-sm">
               The first decentralized Bitcoin lending protocol built on Citrea.
@@ -45,7 +45,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-neutral-800 mt-8 pt-8 text-center text-sm text-neutral-400">
-          © 2025 Bitlend Protocol. All rights reserved.
+          © 2025 Hogo Protocol. All rights reserved.
         </div>
       </div>
     </footer>

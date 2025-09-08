@@ -9,7 +9,7 @@ export default function CTASection() {
         <div className="space-y-8">
           <h2 className="text-3xl lg:text-4xl font-bold tracking-tight">Ready to Start Earning with Your Bitcoin?</h2>
           <p className="text-xl text-neutral-400">
-            Join thousands of Bitcoin holders who are already earning passive income with Bitlend.
+            Join thousands of Bitcoin holders who are already earning passive income with Hogo.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/DelegationPage">

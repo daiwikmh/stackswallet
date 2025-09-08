@@ -9,7 +9,7 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-2">
             <img src="/aegislogo.png" alt="Aegis Logo" className="w-8 h-8" />
-            <span className="text-xl font-bold tracking-wider text-orange-500">BITLEND</span>
+            <span className="text-xl font-bold tracking-wider text-orange-500">Hogo</span>
             <Badge className="bg-orange-500/20 text-orange-500 text-xs">BETA</Badge>
           </div>
 

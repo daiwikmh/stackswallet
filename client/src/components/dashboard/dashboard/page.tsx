@@ -58,7 +58,7 @@ export default function DashboardPage() {
         <div className="p-4">
           <div className="flex items-center justify-between mb-8">
             <div className={`${sidebarCollapsed ? "hidden" : "block"}`}>
-              <h1 className="text-orange-500 font-bold text-lg tracking-wider">BITLEND</h1>
+              <h1 className="text-orange-500 font-bold text-lg tracking-wider">Hogo</h1>
               <p className="text-neutral-500 text-xs">DeFi Protocol v1.0</p>
             </div>
             <Button
@@ -127,7 +127,7 @@ export default function DashboardPage() {
         <div className="h-16 bg-neutral-800 border-b border-neutral-700 flex items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <div className="text-sm text-neutral-400">
-              BITLEND PROTOCOL / <span className="text-orange-500">DASHBOARD</span>
+              Hogo PROTOCOL / <span className="text-orange-500">DASHBOARD</span>
             </div>
           </div>
           <div className="flex items-center gap-4">
