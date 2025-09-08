@@ -1,4 +1,4 @@
-import { agentWithChatHistory } from "../../agent/agent";
+import { initAgent } from "../../agent/agent"; // import your initAgent factory
 
 export interface AgentStreamCallbacks {
   onChunk: (chunk: string) => void;
@@ -7,6 +7,15 @@ export interface AgentStreamCallbacks {
 }
 
 class AgentService {
+private agentWithChatHistoryPromise: ReturnType<typeof initAgent> | null = null;
+
+  private async getAgent() {
+    if (!this.agentWithChatHistoryPromise) {
+      this.agentWithChatHistoryPromise = initAgent();
+    }
+    return this.agentWithChatHistoryPromise;
+  }
+
   /**
    * Stream response from the LangChain agent
    */
@@ -19,30 +28,24 @@ class AgentService {
   ): Promise<void> {
     try {
       console.log("🤖 Starting agent stream for input:", input);
-      
+
+      const agentWithChatHistory = await this.getAgent();
+
       let hasStarted = false;
-      let finalOutput = '';
-      
-      // Create the streaming configuration with proper callbacks
+      let finalOutput = "";
+
       const streamConfig = {
         configurable: { sessionId },
         callbacks: [
           {
             handleLLMNewToken(token: string) {
-              // Handle individual tokens from the LLM
-              console.log("📝 Token received:", token);
               if (!hasStarted) {
                 hasStarted = true;
-                onChunk(""); // Initialize streaming
+                onChunk(""); // Initialize stream
               }
               onChunk(token);
             },
-            handleLLMEnd() {
-              // Called when the LLM finishes generating
-              console.log("✅ Agent LLM generation completed");
-            },
             handleChainEnd() {
-              // Called when the entire chain/agent finishes
               console.log("✅ Agent chain completed");
               onComplete();
             },
@@ -54,53 +57,20 @@ class AgentService {
         ],
       };
 
-      try {
-        // Use invoke for more reliable streaming with the current setup
-        const response = await agentWithChatHistory.invoke(
-          { input },
-          streamConfig
-        );
+      const response = await agentWithChatHistory.invoke(
+        { input },
+        streamConfig
+      );
 
-        // If we have a response output, stream it character by character
-        if (response && response.output) {
-          finalOutput = response.output;
-          
-          // Stream the output character by character for better UX
-          for (let i = 0; i < finalOutput.length; i++) {
-            onChunk(finalOutput[i]);
-            // Small delay to simulate streaming
-            await new Promise(resolve => setTimeout(resolve, 20));
-          }
-        } else {
-          onChunk("I apologize, but I couldn't generate a proper response. Please try again.");
-        }
-
-        onComplete();
-
-      } catch (streamError) {
-        console.error("❌ Streaming error, falling back to regular invoke:", streamError);
-        
-        // Fallback to regular invoke if streaming fails
-        try {
-          const response = await agentWithChatHistory.invoke(
-            { input },
-            { configurable: { sessionId } }
-          );
-          
-          if (response && response.output) {
-            finalOutput = response.output;
-            onChunk(finalOutput);
-          } else {
-            onChunk("I'm having trouble processing your request. Please try again.");
-          }
-          
-          onComplete();
-        } catch (fallbackError) {
-          console.error("❌ Fallback also failed:", fallbackError);
-          onError(fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)));
+      if (response && response.output) {
+        finalOutput = response.output;
+        for (let i = 0; i < finalOutput.length; i++) {
+          onChunk(finalOutput[i]);
+          await new Promise((r) => setTimeout(r, 20));
         }
       }
 
+      onComplete();
     } catch (error) {
       console.error("❌ Agent service error:", error);
       onError(error instanceof Error ? error : new Error(String(error)));
@@ -108,49 +78,27 @@ class AgentService {
   }
 
   /**
-   * Get a simple non-streaming response from the agent
+   * Non-streaming response
    */
   async getResponse(input: string, sessionId: string): Promise<string> {
-    try {
-      console.log("🤖 Getting agent response for:", input);
-      
-      const response = await agentWithChatHistory.invoke(
-        { input },
-        { configurable: { sessionId } }
-      );
-
-      return response.output || response.content || "No response generated";
-      
-    } catch (error) {
-      console.error("❌ Agent service error:", error);
-      throw error;
-    }
+    const agentWithChatHistory = await this.getAgent();
+    const response = await agentWithChatHistory.invoke(
+      { input },
+      { configurable: { sessionId } }
+    );
+    return response.output || response.content || "No response generated";
   }
 
-  /**
-   * Clear chat history for a session
-   */
   async clearSession(sessionId: string): Promise<void> {
-    try {
-      // The agent service doesn't expose a direct way to clear history,
-      // but we can create a new session by using a different sessionId
-      console.log("🗑️ Session cleared:", sessionId);
-    } catch (error) {
-      console.error("❌ Failed to clear session:", error);
-      throw error;
-    }
+    console.log("🗑️ Clearing session:", sessionId);
+    // nothing needed if using in-memory ChatMessageHistory
   }
 
-  /**
-   * Health check to ensure the agent is working
-   */
   async healthCheck(): Promise<boolean> {
     try {
-      const testSessionId = `health_check_${Date.now()}`;
-      const response = await this.getResponse("Hello", testSessionId);
-      return typeof response === 'string' && response.length > 0;
-    } catch (error) {
-      console.error("❌ Agent health check failed:", error);
+      const response = await this.getResponse("Hello", `health_${Date.now()}`);
+      return typeof response === "string" && response.length > 0;
+    } catch {
       return false;
     }
   }

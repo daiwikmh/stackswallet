@@ -8,6 +8,9 @@ export default defineConfig({
     tailwindcss(),
 
   ],
+   build: {
+    target: 'esnext' // or 'es2022'
+  },
   server: {
     host: '0.0.0.0',
     port: process.env.PORT ? parseInt(process.env.PORT) : 3000,

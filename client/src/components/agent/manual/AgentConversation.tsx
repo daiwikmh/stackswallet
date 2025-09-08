@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bot, Send, User, Loader2, MessageSquare, Trash2 } from 'lucide-react';
+import { Bot, Send, User, Loader2, MessageSquare, Trash2, ChevronDown } from 'lucide-react';
 import { useAgent } from './AgentContext';
 import ReactMarkdown from 'react-markdown';
 import ErrorBoundary from '../ErrorBoundary';
@@ -23,6 +23,7 @@ export default function AgentConversation({ agentId }: AgentConversationProps) {
   } = useAgent();
   
   const [input, setInput] = useState("");
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -31,6 +32,13 @@ export default function AgentConversation({ agentId }: AgentConversationProps) {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Monitor scroll position to show/hide scroll-to-bottom button
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const container = event.currentTarget;
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    setShowScrollButton(!isNearBottom && conversation && conversation.messages.length > 0);
   };
 
   useEffect(() => {
@@ -108,7 +116,37 @@ export default function AgentConversation({ agentId }: AgentConversationProps) {
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+      <div className="relative flex-1">
+        <ScrollArea 
+          className="h-full p-4 scroll-smooth chat-scroll [&>[data-radix-scroll-area-viewport]]:scroll-smooth" 
+          ref={scrollAreaRef}
+          onScrollCapture={handleScroll}
+        >
+          <style jsx global>{`
+            /* Custom scrollbar for manual agent chat */
+            [data-radix-scroll-area-scrollbar][data-orientation="vertical"] {
+              width: 8px;
+              background: rgba(59, 130, 246, 0.2);
+              border-radius: 4px;
+              margin: 4px;
+            }
+            
+            [data-radix-scroll-area-scrollbar][data-orientation="vertical"] [data-radix-scroll-area-thumb] {
+              background: linear-gradient(to bottom, #3b82f6, #1d4ed8);
+              border-radius: 4px;
+              transition: all 0.2s ease;
+            }
+            
+            [data-radix-scroll-area-scrollbar][data-orientation="vertical"] [data-radix-scroll-area-thumb]:hover {
+              background: linear-gradient(to bottom, #60a5fa, #3b82f6);
+              width: 10px;
+            }
+            
+            [data-radix-scroll-area-scrollbar][data-orientation="vertical"]:hover {
+              width: 10px;
+              background: rgba(59, 130, 246, 0.3);
+            }
+          `}</style>
         <div className="space-y-4">
           {!conversation || conversation.messages.length === 0 ? (
             <div className="text-center py-12">
@@ -229,6 +267,18 @@ export default function AgentConversation({ agentId }: AgentConversationProps) {
           <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
+      
+      {/* Scroll to Bottom Button */}
+      {showScrollButton && (
+        <Button
+          onClick={scrollToBottom}
+          className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg transition-all transform hover:scale-110 z-10"
+          size="icon"
+        >
+          <ChevronDown className="w-4 h-4" />
+        </Button>
+      )}
+    </div>
 
       {/* Input */}
       <div className="border-t border-neutral-700 p-4">

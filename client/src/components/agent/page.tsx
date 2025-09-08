@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, User, Loader2, MessageSquare, Zap, Users } from "lucide-react";
+import { Bot, Send, User, Loader2, MessageSquare, Zap, Users, ChevronDown } from "lucide-react";
 import { agentService } from "./agent-service";
 import ReactMarkdown from "react-markdown";
 import ErrorBoundary from "./ErrorBoundary";
@@ -44,13 +44,22 @@ function AgentChatInterface({ walletAddress, isWalletConnected }: AgentPageProps
   } = useAgent();
   
   const [input, setInput] = useState("");
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const conversation = activeAgent ? getAgentConversation(activeAgent.id) : undefined;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Monitor scroll position to show/hide scroll-to-bottom button
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const container = event.currentTarget;
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    setShowScrollButton(!isNearBottom && conversation && conversation.messages.length > 0);
   };
 
   useEffect(() => {
@@ -214,7 +223,62 @@ function AgentChatInterface({ walletAddress, isWalletConnected }: AgentPageProps
         {/* Chat Interface */}
         <div className="flex-1 flex flex-col">
           {/* Messages */}
-          <ScrollArea className="flex-1 p-6" ref={scrollAreaRef}>
+          <div className="relative flex-1">
+            <ScrollArea 
+              className="h-full p-6 scroll-smooth chat-scroll [&>[data-radix-scroll-area-viewport]]:scroll-smooth" 
+              ref={scrollAreaRef}
+              onScrollCapture={handleScroll}
+            >
+            <style jsx global>{`
+              /* Custom scrollbar for chat area */
+              [data-radix-scroll-area-scrollbar][data-orientation="vertical"] {
+                width: 8px;
+                background: rgba(64, 64, 64, 0.3);
+                border-radius: 4px;
+                margin: 4px;
+              }
+              
+              [data-radix-scroll-area-scrollbar][data-orientation="vertical"] [data-radix-scroll-area-thumb] {
+                background: linear-gradient(to bottom, #f97316, #ea580c);
+                border-radius: 4px;
+                transition: all 0.2s ease;
+              }
+              
+              [data-radix-scroll-area-scrollbar][data-orientation="vertical"] [data-radix-scroll-area-thumb]:hover {
+                background: linear-gradient(to bottom, #fb923c, #f97316);
+                width: 10px;
+              }
+              
+              [data-radix-scroll-area-scrollbar][data-orientation="vertical"]:hover {
+                width: 10px;
+                background: rgba(64, 64, 64, 0.4);
+              }
+              
+              /* Smooth scrolling animation */
+              [data-radix-scroll-area-viewport] {
+                scroll-behavior: smooth;
+              }
+              
+              /* Custom scrollbar for webkit browsers as fallback */
+              .chat-scroll::-webkit-scrollbar {
+                width: 8px;
+              }
+              
+              .chat-scroll::-webkit-scrollbar-track {
+                background: rgba(64, 64, 64, 0.3);
+                border-radius: 4px;
+              }
+              
+              .chat-scroll::-webkit-scrollbar-thumb {
+                background: linear-gradient(to bottom, #f97316, #ea580c);
+                border-radius: 4px;
+                transition: all 0.2s ease;
+              }
+              
+              .chat-scroll::-webkit-scrollbar-thumb:hover {
+                background: linear-gradient(to bottom, #fb923c, #f97316);
+              }
+            `}</style>
             <div className="space-y-4 max-w-4xl mx-auto">
               {!activeAgent ? (
                 <div className="text-center py-12">
@@ -345,6 +409,18 @@ function AgentChatInterface({ walletAddress, isWalletConnected }: AgentPageProps
               <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
+          
+          {/* Scroll to Bottom Button */}
+          {showScrollButton && (
+            <Button
+              onClick={scrollToBottom}
+              className="absolute bottom-6 right-6 w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg transition-all transform hover:scale-110 z-10"
+              size="icon"
+            >
+              <ChevronDown className="w-5 h-5" />
+            </Button>
+          )}
+        </div>
 
           {/* Input */}
           <div className="border-t border-neutral-800/50 bg-gradient-to-r from-neutral-900 to-neutral-950 p-6">

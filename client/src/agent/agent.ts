@@ -1,25 +1,24 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { delegationTools } from "./delegation_tools";
 import { buildMultisigTools } from "./multisig_tools";
-import {ChatPromptTemplate} from "@langchain/core/prompts";
-import { createToolCallingAgent } from "langchain/agents";
-import { AgentExecutor } from "langchain/agents";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { createToolCallingAgent, AgentExecutor } from "langchain/agents";
 import { ChatMessageHistory } from "@langchain/community/stores/message/in_memory";
 import { BaseChatMessageHistory } from "@langchain/core/chat_history";
 import { RunnableWithMessageHistory } from "@langchain/core/runnables";
-import {SendStxTool} from "./sendstx";
+import { SendStxTool } from "./sendstx";
 
-
-const llm = new ChatOpenAI({
-  model: "deepseek/deepseek-chat-v3.1",
-  temperature: 0.8,
-  streaming: true,
-  apiKey: import.meta.env.VITE_OPENROUTER_API_KEY, // better to pass via env
-  configuration: {
-    baseURL: "https://openrouter.ai/api/v1", // ✅ correct way
-  },
-});
-
+// ✅ wrap everything in a function instead of top-level await
+export async function initAgent() {
+  const llm = new ChatOpenAI({
+    model: "deepseek/deepseek-chat-v3.1",
+    temperature: 0.8,
+    streaming: true,
+    apiKey: import.meta.env.VITE_OPENROUTER_API_KEY,
+    configuration: {
+      baseURL: "https://openrouter.ai/api/v1",
+    },
+  });``
 
 
 
@@ -254,38 +253,40 @@ Assistant: (Explain what STX is, do not use any tools)
   
 ]);
 
-const tools = [
-  ...buildMultisigTools(),
-  ...delegationTools,
-  SendStxTool,
-];
+ const tools = [
+    ...buildMultisigTools(),
+    ...delegationTools,
+    SendStxTool,
+  ];
 
-const modalwithtools = llm.bindTools(tools);
+  const modalwithtools = llm.bindTools(tools);
 
+  const agent = await createToolCallingAgent({
+    llm: modalwithtools,
+    tools,
+    prompt,
+  });
 
-const agent = await createToolCallingAgent({ llm: modalwithtools, tools, prompt });
+  const agentExecutor = new AgentExecutor({
+    agent,
+    tools,
+  });
 
-const agentExecutor = new AgentExecutor({
-  agent,
-  tools,
-});
+  const store: { [sessionId: string]: BaseChatMessageHistory } = {};
 
-const store: { [sessionId: string]: BaseChatMessageHistory } = {};
-
-function getMessageHistory(sessionId: string): BaseChatMessageHistory {
-  if (!(sessionId in store)) {
-    store[sessionId] = new ChatMessageHistory();
+  function getMessageHistory(sessionId: string): BaseChatMessageHistory {
+    if (!(sessionId in store)) {
+      store[sessionId] = new ChatMessageHistory();
+    }
+    return store[sessionId];
   }
-  return store[sessionId];
+
+  const agentWithChatHistory = new RunnableWithMessageHistory({
+    runnable: agentExecutor,
+    getMessageHistory,
+    inputMessagesKey: "input",
+    historyMessagesKey: "chat_history",
+  });
+
+  return agentWithChatHistory;
 }
-
-const agentWithChatHistory = new RunnableWithMessageHistory({
-  runnable: agentExecutor,
-  getMessageHistory,
-  inputMessagesKey: "input",
-  historyMessagesKey: "chat_history",
-});
-
-export { agentWithChatHistory };
-
-
