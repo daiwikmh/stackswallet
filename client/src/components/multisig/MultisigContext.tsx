@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode, useEffect, useState } from 'react';
+import { createContext, useContext, ReactNode, useEffect, useState } from 'react';
 import { getConnectedStxAddress } from '../../utils/wallet';
 
 interface MultisigContextType {

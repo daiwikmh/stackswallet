@@ -1,13 +1,11 @@
 // Multisig Wallet Contract Interface
 import {
-  makeContractCall,
-  broadcastTransaction,
+ 
   AnchorMode,
   PostConditionMode,
   standardPrincipalCV,
   uintCV,
-  contractPrincipalCV,
-  FungibleConditionCode,
+ 
   cvToJSON,
   hexToCV,
   fetchCallReadOnlyFunction,
@@ -16,7 +14,7 @@ import {
   noneCV,
   bufferCV
 } from '@stacks/transactions';
-import { StacksNetwork, STACKS_TESTNET} from '@stacks/network';
+import {  STACKS_TESTNET} from '@stacks/network';
 import { openContractCall } from '@stacks/connect';
 
 // Contract details

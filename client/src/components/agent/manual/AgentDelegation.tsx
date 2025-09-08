@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAgent } from './AgentContext';
 import { STXToMicroSTX, formatAddress, formatSTX } from './contract';
-import { DelegationContract } from '../delegation/contract';
+import { DelegationContract } from '../../delegation/contract';
 import { Shield, Bot, DollarSign, Calendar, Zap, ArrowRight } from 'lucide-react';
 
 interface AgentDelegationProps {

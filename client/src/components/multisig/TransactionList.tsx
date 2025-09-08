@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { MultisigContract, TransactionInfo, formatSTX, formatAddress } from './contract';
 import { useMultisig } from './MultisigContext';
-import { CheckCircle, Clock, Send, FileText, User, Calendar } from 'lucide-react';
+import { CheckCircle, Clock, Send, FileText} from 'lucide-react';
 
 interface TransactionListProps {
   onRefresh?: () => void;

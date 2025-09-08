@@ -2,7 +2,7 @@ import React, { createContext, useContext, ReactNode, useEffect, useState } from
 import { AgentWallet, AgentTransaction, AgentSystem, AgentStorage } from './contract';
 import { makeSTXTokenTransfer, broadcastTransaction } from '@stacks/transactions';
 import { STACKS_TESTNET } from '@stacks/network';
-import { useStacksWallet } from '../../contexts/StacksWalletContext';
+import { useStacksWallet } from '../../../contexts/StacksWalletContext';
 import { openSTXTransfer } from '@stacks/connect';
 
 interface AgentContextType {

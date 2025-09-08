@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useStacksWallet } from '../../contexts/StacksWalletContext';
-import { DelegationContract, formatSTX, STXToMicroSTX } from './contract';
+import { DelegationContract, formatSTX } from './contract';
 import StacksWalletConnect from '../StacksWalletConnect';
 import CreateDelegation from './CreateDelegation';
 import ManageDelegation from './ManageDelegation';
 import DelegationList from './DelegationList';
 import SpendDelegated from './SpendDelegated';
-import { STACKS_TESTNET } from '@stacks/network';
 import { DelegationProvider } from './DelegationContext';
 import { getConnectedStxAddress } from '../../utils/wallet';
 
@@ -17,7 +16,7 @@ interface TabProps {
   onClick: () => void;
 }
 
-const Tab: React.FC<TabProps> = ({ id, label, isActive, onClick }) => (
+const Tab: React.FC<TabProps> = ({ label, isActive, onClick }) => (
   <button
     onClick={onClick}
     className={`px-6 py-3 font-medium text-sm transition-colors duration-200 ${

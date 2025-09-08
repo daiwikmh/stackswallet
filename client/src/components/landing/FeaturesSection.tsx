@@ -1,27 +1,27 @@
 import { Card, CardContent } from "@/components/ui/card"
-import { Shield, Zap, TrendingUp, Lock } from "lucide-react"
+import { Shield, Bot, Receipt, Users } from "lucide-react"
 
 export default function FeaturesSection() {
   const features = [
     {
       icon: <Shield className="w-8 h-8" />,
-      title: "Non-Custodial",
-      description: "Keep full control of your Bitcoin. No intermediaries, no custody risks.",
+      title: "Multi-Signature Security",
+      description: "Pool STX with configurable thresholds. Owners propose transfers and collectively approve them for enhanced security.",
     },
     {
-      icon: <Zap className="w-8 h-8" />,
-      title: "Lightning Fast",
-      description: "Built on Citrea for instant transactions and minimal fees.",
+      icon: <Bot className="w-8 h-8" />,
+      title: "AI Agent Automation",
+      description: "Deploy intelligent agents as delegates to automate transactions under your defined laws and budget constraints.",
     },
     {
-      icon: <TrendingUp className="w-8 h-8" />,
-      title: "Competitive Yields",
-      description: "Earn up to 12% APY on your Bitcoin holdings through our optimized protocols.",
+      icon: <Receipt className="w-8 h-8" />,
+      title: "Expense Sharing",
+      description: "Splitwise-style functionality for recording debts, tracking expenses, and automatic settlement through smart contracts.",
     },
     {
-      icon: <Lock className="w-8 h-8" />,
-      title: "Secure by Design",
-      description: "Audited smart contracts and battle-tested security protocols.",
+      icon: <Users className="w-8 h-8" />,
+      title: "Collaborative Management",
+      description: "Multiple owners can participate in governance, with transparent proposal and approval workflows.",
     },
   ]
 
@@ -30,11 +30,11 @@ export default function FeaturesSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center space-y-4 mb-16">
           <h2 className="text-3xl lg:text-4xl font-bold tracking-tight">
-            Why Choose <span className="text-orange-500">Hogo</span>?
+            Beyond Basic <span className="text-orange-500">Multi-Sig</span>
           </h2>
           <p className="text-xl text-neutral-400 max-w-3xl mx-auto">
-            Experience the future of Bitcoin DeFi with our cutting-edge protocol built for security, efficiency, and
-            maximum returns.
+            A three-layer programmable wallet system that combines multi-signature security, AI automation, 
+            and collaborative expense management on Stacks.
           </p>
         </div>
 

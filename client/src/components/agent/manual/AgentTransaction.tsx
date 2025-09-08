@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAgent } from './AgentContext';
 import { STXToMicroSTX, formatAddress } from './contract';
-import { CONTRACT_ADDRESS, CONTRACT_NAME, NETWORK } from '../delegation/contract';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, NETWORK } from '../../delegation/contract';
+
 import {
   makeContractCall,
   broadcastTransaction,
@@ -11,7 +12,7 @@ import {
   standardPrincipalCV,
   uintCV
 } from '@stacks/transactions';
-import { Send, DollarSign, Bot, Zap, ArrowRight, Shield } from 'lucide-react';
+import { Send, DollarSign, Bot, ArrowRight, Shield } from 'lucide-react';
 
 interface AgentTransactionProps {
   onSuccess?: () => void;

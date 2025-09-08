@@ -1,19 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronRight, Wallet, Bell, RefreshCw, Users, Shield, Receipt, Bot } from "lucide-react";
+import { ChevronRight, Bell, RefreshCw, Users, Shield, Receipt, Bot, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DelegationPage from "./delegation/page";
 import MultisigPage from "../../multisig/page";
 import SplitwisePage from "../../splitwise/page";
 import AgentPage from "../../agent/page";
+import ManualAgentPage from "../../agent/manual/page";
 import { StacksWalletConnect } from "@/components/StacksWalletConnect";
 import { useStacksWallet } from "@/contexts/StacksWalletContext";
 import { getConnectedStxAddress } from "../../../utils/wallet";
 
 export default function DashboardPage() {
   const { isWalletConnected, selectedAddress } = useStacksWallet();
-  const [activeSection, setActiveSection] = useState("portfolio");
+  const [activeSection, setActiveSection] = useState("agent");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [properAddress, setProperAddress] = useState<string | null>(null);
 
@@ -80,7 +81,8 @@ export default function DashboardPage() {
               { id: "delegation", icon: Users, label: "DELEGATION" },
               { id: "multisig", icon: Shield, label: "MULTISIG" },
               { id: "splitwise", icon: Receipt, label: "SPLIT PAYMENTS" },
-              { id: "agent", icon: Bot, label: "AI AGENTS" },
+              { id: "agent", icon: Bot, label: "AI CHAT" },
+              { id: "manual-agent", icon: Wrench, label: "MANUAL CONTROL" },
             ].map((item) => (
               <button
                 key={item.id}
@@ -164,6 +166,12 @@ export default function DashboardPage() {
           )}
           {activeSection === "agent" && (
             <AgentPage 
+              walletAddress={properAddress}
+              isWalletConnected={isWalletConnected}
+            />
+          )}
+          {activeSection === "manual-agent" && (
+            <ManualAgentPage 
               walletAddress={properAddress}
               isWalletConnected={isWalletConnected}
             />

@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card"
-import { Shield, Lock, Globe } from "lucide-react"
+import { Shield, Users, Code } from "lucide-react"
 
 export default function SecuritySection() {
   return (
@@ -7,11 +7,11 @@ export default function SecuritySection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center space-y-4 mb-16">
           <h2 className="text-3xl lg:text-4xl font-bold tracking-tight">
-            Built for <span className="text-orange-500">Security</span>
+            Security by <span className="text-orange-500">Design</span>
           </h2>
           <p className="text-xl text-neutral-400 max-w-3xl mx-auto">
-            Your Bitcoin's security is our top priority. We've implemented multiple layers of protection to keep your
-            funds safe.
+            Multi-signature architecture, audited smart contracts, and decentralized governance 
+            ensure your funds are protected by multiple layers of security.
           </p>
         </div>
 
@@ -19,29 +19,29 @@ export default function SecuritySection() {
           <Card className="bg-neutral-900 border-neutral-700">
             <CardContent className="p-6 text-center space-y-4">
               <Shield className="w-12 h-12 text-orange-500 mx-auto" />
-              <h3 className="text-xl font-bold">Smart Contract Audits</h3>
+              <h3 className="text-xl font-bold">Multi-Signature Protection</h3>
               <p className="text-neutral-400">
-                Audited by leading security firms including Trail of Bits and ConsenSys Diligence.
+                Requires multiple signatures for transaction approval, eliminating single points of failure and unauthorized access.
               </p>
             </CardContent>
           </Card>
 
           <Card className="bg-neutral-900 border-neutral-700">
             <CardContent className="p-6 text-center space-y-4">
-              <Lock className="w-12 h-12 text-orange-500 mx-auto" />
-              <h3 className="text-xl font-bold">Non-Custodial</h3>
+              <Code className="w-12 h-12 text-orange-500 mx-auto" />
+              <h3 className="text-xl font-bold">Audited Clarity Contracts</h3>
               <p className="text-neutral-400">
-                You maintain full control of your private keys. We never have access to your funds.
+                Smart contracts built in Clarity are decidable and auditable, with transparent execution on Stacks blockchain.
               </p>
             </CardContent>
           </Card>
 
           <Card className="bg-neutral-900 border-neutral-700">
             <CardContent className="p-6 text-center space-y-4">
-              <Globe className="w-12 h-12 text-orange-500 mx-auto" />
-              <h3 className="text-xl font-bold">Decentralized</h3>
+              <Users className="w-12 h-12 text-orange-500 mx-auto" />
+              <h3 className="text-xl font-bold">Distributed Governance</h3>
               <p className="text-neutral-400">
-                Built on Citrea's decentralized network with no single point of failure.
+                Decentralized ownership model where no single party can control funds or modify critical parameters.
               </p>
             </CardContent>
           </Card>

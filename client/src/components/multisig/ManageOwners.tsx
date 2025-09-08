@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { MultisigContract, formatAddress } from './contract';
+import { MultisigContract } from './contract';
 import { useMultisig } from './MultisigContext';
 import { Users, Plus, Trash2, Settings } from 'lucide-react';
 

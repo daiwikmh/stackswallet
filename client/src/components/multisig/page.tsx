@@ -9,7 +9,7 @@ import TransactionList from './TransactionList';
 import ManageOwners from './ManageOwners';
 import { MultisigProvider } from './MultisigContext';
 import { getConnectedStxAddress } from '../../utils/wallet';
-import { Shield, PiggyBank, Send, FileText, Users, RefreshCw } from 'lucide-react';
+import { Shield, PiggyBank, Send, FileText, Users } from 'lucide-react';
 
 interface TabProps {
   id: string;
@@ -19,7 +19,7 @@ interface TabProps {
   onClick: () => void;
 }
 
-const Tab: React.FC<TabProps> = ({ id, label, icon: Icon, isActive, onClick }) => (
+const Tab: React.FC<TabProps> = ({ label,  isActive, onClick }) => (
   <button
     onClick={onClick}
     className={`px-6 py-3 font-medium text-sm transition-colors duration-200 ${
@@ -110,10 +110,7 @@ const MultisigPage: React.FC = () => {
     await fetchWalletInfo();
   };
 
-  // Helper function to check if wallet is truly ready
-  const isWalletReady = () => {
-    return isWalletConnected && !!properAddress;
-  };
+ 
 
   if (!isWalletConnected) {
     return (

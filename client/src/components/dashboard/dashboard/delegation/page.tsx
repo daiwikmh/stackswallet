@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useStacksWallet } from '../../../../contexts/StacksWalletContext';
 import { DelegationContract, formatSTX } from '../../../delegation/contract';
 import { DelegationProvider } from '../../../delegation/DelegationContext';
-import { getConnectedStxAddress } from '../../../../utils/wallet';
 import CreateDelegation from '../../../delegation/CreateDelegation';
 import ManageDelegation from '../../../delegation/ManageDelegation';
 import DelegationList from '../../../delegation/DelegationList';
